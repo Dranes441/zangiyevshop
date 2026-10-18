@@ -438,10 +438,31 @@ async def admin_done(call: CallbackQuery):
     await call.answer("Заказ отмечен выполненным.")
 
 
+async def health(request):
+    return web.json_response({"status": "ok", "service": "Dranes Stars Shop"})
+
+
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", "10000"))
+    await web.TCPSite(runner, "0.0.0.0", port).start()
+    print(f"Web server запущен на порту {port}")
+    return runner
+
+
 async def main():
     init_db()
-    print("Dranes Stars Shop запущен.")
-    await dp.start_polling(bot)
+    runner = await start_web_server()
+    try:
+        print("Dranes Stars Shop запущен.")
+        await dp.start_polling(bot)
+    finally:
+        await runner.cleanup()
+        await bot.session.close()
 
 
 if __name__ == "__main__":
